@@ -2,7 +2,8 @@
 
 ## Overview
 
-This is a comprehensive task management system built with Next.js, Prisma, and MongoDB. It supports role-based access control, team collaboration, task tracking, and project management.
+This is a comprehensive task management system built with Next.js, Prisma, and MongoDB. 
+It supports role-based access control, team collaboration, task tracking, and project management.
 
 ## Quick Start
 
