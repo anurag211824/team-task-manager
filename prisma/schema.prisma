@@ -1,0 +1,348 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ============= ENUMS =============
+enum GlobalRole {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
+enum ProjectRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  TASK_UPDATED
+  TASK_COMPLETED
+  COMMENT_ADDED
+  PROJECT_CREATED
+  MEMBER_ADDED
+  DEADLINE_APPROACHING
+}
+
+enum ActivityAction {
+  CREATED
+  UPDATED
+  DELETED
+  STATUS_CHANGED
+  ASSIGNED
+  COMMENTED
+  ATTACHED_FILE
+}
+
+enum ActivityEntityType {
+  TASK
+  PROJECT
+  COMMENT
+  FILE
+}
+
+// ============= USER MODELS =============
+model User {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  email           String            @unique
+  password        String
+  name            String
+  avatar          String?
+  globalRole      GlobalRole        @default(USER)
+  isEmailVerified Boolean           @default(false)
+  
+  bio             String?
+  timezone        String            @default("UTC")
+  preferences     Json              @default("{}")
+  
+  ownedProjects   Project[]         @relation("ProjectOwner")
+  projectMembers  ProjectMember[]   @relation("ProjectMember")
+  assignedTasks   Task[]            @relation("TaskAssignee")
+  createdTasks    Task[]            @relation("TaskCreator")
+  comments        TaskComment[]     @relation("CommentAuthor")
+  activities      Activity[]        @relation("ActivityUser")
+  notifications   Notification[]    @relation("NotificationUser")
+  
+  uploadedFiles   FileAttachment[]  @relation("UserUploadedFiles")
+  auditFiles      UserFiles[]       @relation("UserAuditFiles")
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  lastLoginAt     DateTime?
+
+  // REMOVED Redundant email index (already covered by @unique)
+  @@index([globalRole])
+}
+
+// ============= PROJECT MODELS =============
+model Project {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  description     String?
+  color           String            @default("#3b82f6")
+  icon            String?
+  
+  ownerId         String            @db.ObjectId
+  owner           User              @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  members         ProjectMember[]   @relation("ProjectMembers")
+  tasks           Task[]            @relation("ProjectTasks")
+  comments        TaskComment[]     @relation("ProjectComments")
+  activities      Activity[]        @relation("ProjectActivity")
+  tags            Tag[]             @relation("ProjectTags")
+  attachments     FileAttachment[]  @relation("ProjectFiles")
+  
+  tasksCount      Int               @default(0)
+  completedCount  Int               @default(0)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([ownerId])
+}
+
+model ProjectMember {
+  id               String           @id @default(auto()) @map("_id") @db.ObjectId
+  projectId        String           @db.ObjectId
+  project          Project          @relation("ProjectMembers", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  userId           String           @db.ObjectId
+  user             User              @relation("ProjectMember", fields: [userId], references: [id], onDelete: Cascade)
+  
+  role             ProjectRole      @default(MEMBER)
+  joinedAt         DateTime          @default(now())
+  invitedBy        String?          @db.ObjectId
+  
+  canManageTasks   Boolean          @default(true)
+  canManageMembers Boolean          @default(false)
+  canDelete        Boolean          @default(false)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@index([role])
+}
+
+// ============= TASK MODELS =============
+model Task {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  title           String
+  description     String?
+  
+  status          TaskStatus        @default(TODO)
+  priority        TaskPriority      @default(MEDIUM)
+  
+  dueDate         DateTime?
+  startDate       DateTime?
+  completedAt     DateTime?
+  
+  projectId       String            @db.ObjectId
+  project         Project           @relation("ProjectTasks", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  creatorId       String            @db.ObjectId
+  creator         User              @relation("TaskCreator", fields: [creatorId], references: [id])
+  
+  assignedToId    String?           @db.ObjectId
+  assignedTo      User?             @relation("TaskAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  
+  // FIXED: Explicit Many-to-Many for MongoDB
+  tagIds          String[]          @db.ObjectId
+  tags            Tag[]             @relation("TaskTags", fields: [tagIds], references: [id])
+
+  comments        TaskComment[]     @relation("TaskComments")
+  attachments     FileAttachment[]  @relation("TaskFiles")
+  activities      Activity[]        @relation("TaskActivity")
+  
+  parentTaskId    String?           @db.ObjectId
+  parentTask      Task?             @relation("Subtasks", fields: [parentTaskId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subtasks        Task[]            @relation("Subtasks")
+  
+  estimatedHours  Float?
+  actualHours     Float?
+  progress        Int               @default(0)
+  commentsCount   Int               @default(0)
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+  @@index([priority])
+}
+
+model Tag {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  name            String
+  color           String            @default("#ef4444")
+  
+  projectId       String            @db.ObjectId
+  project         Project           @relation("ProjectTags", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // FIXED: Explicit Many-to-Many for MongoDB
+  taskIds         String[]          @db.ObjectId
+  tasks           Task[]            @relation("TaskTags", fields: [taskIds], references: [id])
+
+  @@unique([projectId, name])
+}
+
+// ============= COLLABORATION MODELS =============
+model TaskComment {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  content         String
+  
+  taskId          String            @db.ObjectId
+  task            Task              @relation("TaskComments", fields: [taskId], references: [id], onDelete: Cascade)
+  
+  projectId       String            @db.ObjectId
+  project         Project           @relation("ProjectComments", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  authorId        String            @db.ObjectId
+  author          User              @relation("CommentAuthor", fields: [authorId], references: [id])
+  
+  parentCommentId String?           @db.ObjectId
+  parentComment   TaskComment?      @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies         TaskComment[]     @relation("CommentReplies")
+  
+  attachments     FileAttachment[]  @relation("CommentFiles")
+  
+  isEdited        Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([taskId])
+  @@index([authorId])
+}
+
+model FileAttachment {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  filename        String
+  fileSize        Int
+  fileType        String
+  fileUrl         String
+  
+  taskId          String?           @db.ObjectId
+  task            Task?             @relation("TaskFiles", fields: [taskId], references: [id], onDelete: Cascade)
+  
+  commentId       String?           @db.ObjectId
+  comment         TaskComment?      @relation("CommentFiles", fields: [commentId], references: [id], onDelete: Cascade)
+  
+  projectId       String            @db.ObjectId
+  project         Project           @relation("ProjectFiles", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  uploadedById    String            @db.ObjectId
+  uploadedBy      User              @relation("UserUploadedFiles", fields: [uploadedById], references: [id])
+  
+  createdAt       DateTime          @default(now())
+
+  @@index([projectId])
+}
+
+model Activity {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  action          ActivityAction
+  entityType      ActivityEntityType
+  entityId        String
+  
+  description     String
+  changes         Json?
+  
+  projectId       String            @db.ObjectId
+  project         Project           @relation("ProjectActivity", fields: [projectId], references: [id], onDelete: Cascade)
+  
+  taskId          String?           @db.ObjectId
+  task            Task?             @relation("TaskActivity", fields: [taskId], references: [id], onDelete: Cascade)
+  
+  userId          String            @db.ObjectId
+  user            User              @relation("ActivityUser", fields: [userId], references: [id])
+  
+  createdAt       DateTime          @default(now())
+
+  @@index([projectId])
+  @@index([userId])
+}
+
+// ============= NOTIFICATION MODELS =============
+model Notification {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  type            NotificationType
+  title           String
+  message         String
+  
+  userId          String            @db.ObjectId
+  user            User              @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  
+  projectId       String?           @db.ObjectId
+  taskId          String?           @db.ObjectId
+  relatedUserId   String?           @db.ObjectId
+  
+  isRead          Boolean           @default(false)
+  readAt          DateTime?
+  
+  metadata        Json              @default("{}")
+  
+  createdAt       DateTime          @default(now())
+  expiresAt       DateTime?
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ============= INVITE MODELS =============
+model ProjectInvite {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  projectId       String            @db.ObjectId
+  projectName     String
+  
+  email           String
+  role            ProjectRole       @default(MEMBER)
+  
+  invitedBy       String            @db.ObjectId
+  token           String            @unique
+  expiresAt       DateTime
+  
+  isAccepted      Boolean           @default(false)
+  acceptedAt      DateTime?
+  
+  createdAt       DateTime          @default(now())
+
+  // REMOVED Redundant token index (already covered by @unique)
+  @@index([projectId])
+  @@index([email])
+}
+
+// ============= AUDIT MODELS =============
+model UserFiles {
+  id              String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String            @db.ObjectId
+  user            User              @relation("UserAuditFiles", fields: [userId], references: [id], onDelete: Cascade)
+  filename        String
+  fileSize        Int
+  fileType        String
+  fileUrl         String
+  
+  createdAt       DateTime          @default(now())
+
+  @@index([userId])
+}
