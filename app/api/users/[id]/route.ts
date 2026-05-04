@@ -6,7 +6,6 @@ import {
   serverError,
   unauthorized,
   notFound,
-  badRequest,
 } from "@/lib/auth-middleware";
 
 export async function GET(

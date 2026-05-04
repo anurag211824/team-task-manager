@@ -3,7 +3,6 @@ import { prisma } from "@/lib/db";
 import {
   authenticate,
   success,
-  badRequest,
   serverError,
   unauthorized,
   forbidden,
