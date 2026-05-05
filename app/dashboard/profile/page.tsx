@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Edit, LogOut, Mail, Globe, Calendar, User as UserIcon, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 
 export default function ProfilePage() {
   const [userId, setUserId] = useState<string | null>(null)
   const router = useRouter()
   const { logout } = useAuth()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const storedUserId = localStorage.getItem('userId')
     if (storedUserId) {
       setUserId(storedUserId)
@@ -70,7 +70,7 @@ export default function ProfilePage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column - Avatar and Summary */}
         <Card className="p-6 border border-gray-200 dark:border-gray-800 flex flex-col items-center text-center h-fit">
-          <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg mb-4">
+          <div className="w-24 h-24 rounded-full bg-linear-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg mb-4">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user.name}</h2>

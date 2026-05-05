@@ -7,19 +7,18 @@ import {
 } from "@/types";
 
 export const useDashboard = (projectId?: string) => {
-  if (projectId) {
-    return useQuery<ProjectDashboardResponse["data"]>({
-      queryKey: ["dashboard", projectId],
-      queryFn: async () => {
-        const res = await apiClient.get<
-          ApiResponse<ProjectDashboardResponse["data"]>
-        >("/dashboard", { params: { projectId } });
-        return res.data.data!;
-      },
-    });
-  }
+  const projectQuery = useQuery<ProjectDashboardResponse["data"]>({
+    queryKey: ["dashboard", projectId],
+    queryFn: async () => {
+      const res = await apiClient.get<
+        ApiResponse<ProjectDashboardResponse["data"]>
+      >("/dashboard", { params: { projectId } });
+      return res.data.data!;
+    },
+    enabled: !!projectId,
+  });
 
-  return useQuery<UserDashboardResponse["data"]>({
+  const userQuery = useQuery<UserDashboardResponse["data"]>({
     queryKey: ["dashboard"],
     queryFn: async () => {
       const res = await apiClient.get<
@@ -27,5 +26,8 @@ export const useDashboard = (projectId?: string) => {
       >("/dashboard");
       return res.data.data!;
     },
+    enabled: !projectId,
   });
+
+  return projectId ? projectQuery : userQuery;
 };

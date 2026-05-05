@@ -360,7 +360,7 @@ export interface PaginatedResponse<T = unknown> {
   totalPages: number;
 }
 
-export interface ApiPaginatedResponse<T = unknown> extends ApiResponse<PaginatedResponse<T>> {}
+export type ApiPaginatedResponse<T = unknown> = ApiResponse<PaginatedResponse<T>>;
 
 // ============= QUERY TYPES FOR TANSTACK =============
 export interface QueryParams {

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useLayoutEffect, useEffect, useState } from 'react'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,7 +25,7 @@ export default function EditProfilePage() {
     timezone: 'UTC',
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const storedUserId = localStorage.getItem('userId')
     if (storedUserId) {
       setUserId(storedUserId)
