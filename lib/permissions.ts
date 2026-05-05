@@ -5,24 +5,33 @@ export async function checkProjectAccess(
   userId: string,
   projectId: string,
   requiredRole?: ProjectRole
-): Promise<boolean> {
+): Promise<boolean | null> {
   try {
+    console.log("checkProjectAccess called with:", { userId, projectId, requiredRole });
     const project = await prisma.project.findUnique({
       where: { id: projectId },
     });
 
-    if (!project) return false;
+    console.log("Project found:", project ? { id: project.id, ownerId: project.ownerId } : null);
+    if (!project) return null;
 
     // Owner always has access
-    if (project.ownerId === userId) return true;
+    if (project.ownerId === userId) {
+      console.log("Access granted: user is owner");
+      return true;
+    }
 
     const member = await prisma.projectMember.findUnique({
       where: { projectId_userId: { projectId, userId } },
     });
 
+    console.log("Member found:", member ? { id: member.id, role: member.role } : null);
     if (!member) return false;
 
-    if (!requiredRole) return true;
+    if (!requiredRole) {
+      console.log("Access granted: user is member");
+      return true;
+    }
 
     // Check if user's role meets the requirement
     const roleHierarchy: Record<ProjectRole, number> = {
@@ -42,21 +51,27 @@ export async function checkProjectAccess(
 export async function checkTaskAccess(
   userId: string,
   taskId: string
-): Promise<boolean> {
+): Promise<boolean | null> {
   try {
+    console.log("checkTaskAccess called with:", { userId, taskId });
     const task = await prisma.task.findUnique({
       where: { id: taskId },
       include: { project: true },
     });
 
-    if (!task) return false;
+    if (!task) {
+      console.log("Task not found");
+      return null;
+    }
 
     // Task creator and assignee have access
     if (task.creatorId === userId || task.assignedToId === userId) {
+      console.log("Access granted: user is creator or assignee");
       return true;
     }
 
     // Check project membership
+    console.log("Checking project access for task");
     return checkProjectAccess(userId, task.projectId);
   } catch (error) {
     console.error("Error checking task access:", error);

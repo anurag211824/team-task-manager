@@ -28,6 +28,9 @@ export async function GET(
 
     // Check access
     const hasAccess = await checkTaskAccess(user.userId, id);
+    if (hasAccess === null) {
+      return notFound();
+    }
     if (!hasAccess) {
       return forbidden();
     }
@@ -73,6 +76,9 @@ export async function PUT(
 
     // Check access
     const hasAccess = await checkTaskAccess(user.userId, id);
+    if (hasAccess === null) {
+      return notFound();
+    }
     if (!hasAccess) {
       return forbidden();
     }
@@ -182,6 +188,9 @@ export async function DELETE(
 
     // Check access
     const hasAccess = await checkTaskAccess(user.userId, id);
+    if (hasAccess === null) {
+      return notFound();
+    }
     if (!hasAccess) {
       return forbidden();
     }

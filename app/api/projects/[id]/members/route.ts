@@ -28,6 +28,9 @@ export async function GET(
 
     // Check access
     const hasAccess = await checkProjectAccess(user.userId, id);
+    if (hasAccess === null) {
+      return notFound();
+    }
     if (!hasAccess) {
       return forbidden();
     }
