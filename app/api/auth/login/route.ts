@@ -6,6 +6,8 @@ import { validateEmail } from "@/lib/validations";
 import { badRequest, success, serverError} from "@/lib/auth-middleware";
 import { AuthRequest } from "@/types";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AuthRequest;
