@@ -161,7 +161,7 @@ async function main() {
     },
   });
 
-  const task2 = await prisma.task.create({
+  const _task2 = await prisma.task.create({
     data: {
       title: "Create Backend API",
       description: "Set up REST API with authentication",
@@ -176,7 +176,7 @@ async function main() {
     },
   });
 
-  const task3 = await prisma.task.create({
+  const _task3 = await prisma.task.create({
     data: {
       title: "Setup Database",
       description: "Configure MongoDB and create schemas",
@@ -195,7 +195,7 @@ async function main() {
   console.log("✓ Created tasks for project 1");
 
   // Create tasks for project 2
-  const task4 = await prisma.task.create({
+  const _task4 = await prisma.task.create({
     data: {
       title: "Setup iOS Project",
       description: "Initialize Xcode project and configure CocoaPods",
@@ -211,7 +211,7 @@ async function main() {
     },
   });
 
-  const task5 = await prisma.task.create({
+  const _task5 = await prisma.task.create({
     data: {
       title: "Implement Authentication",
       description: "Add login/signup functionality with OAuth",

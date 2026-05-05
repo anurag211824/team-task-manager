@@ -10,14 +10,14 @@ import {
   notFound,
 } from "@/lib/auth-middleware";
 import { validateProjectRequest } from "@/lib/validations";
-import { checkProjectAccess, canDeleteProject, canManageMembers } from "@/lib/permissions";
-import { logActivity, notifyUser } from "@/lib/audit";
-import { ActivityAction, ActivityEntityType, NotificationType, ProjectRole } from "@prisma/client";
-import { UpdateProjectRequest, AddProjectMemberRequest } from "@/types";
+import { checkProjectAccess, canDeleteProject } from "@/lib/permissions";
+import { logActivity } from "@/lib/audit";
+import { ActivityAction, ActivityEntityType } from "@prisma/client";
+import { UpdateProjectRequest } from "@/types";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -25,7 +25,7 @@ export async function GET(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check access
     const hasAccess = await checkProjectAccess(user.userId, id);
@@ -40,7 +40,11 @@ export async function GET(
         members: {
           include: { user: { select: { id: true, name: true, email: true, avatar: true } } },
         },
-        _count: { select: { tasks: true, comments: true } },
+        _count: { select: { tasks: true, comments: true,  members: true,  } },
+        tasks: {
+          where: { status: "DONE" },
+          select: { id: true }
+        }
       },
     });
 
@@ -57,7 +61,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -65,7 +69,7 @@ export async function PUT(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check access
     const hasAccess = await checkProjectAccess(user.userId, id);
@@ -97,9 +101,6 @@ export async function PUT(
         name: body.name,
         description: body.description,
         color: body.color,
-        isPublic: body.isPublic,
-        archived: body.archived,
-        archivedAt: body.archived ? new Date() : null,
       },
       include: {
         owner: { select: { id: true, name: true, email: true } },
@@ -133,7 +134,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -141,7 +142,7 @@ export async function DELETE(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if user can delete
     const canDelete = await canDeleteProject(user.userId, id);

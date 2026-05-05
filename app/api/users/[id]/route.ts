@@ -10,7 +10,7 @@ import {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -18,7 +18,7 @@ export async function GET(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     const targetUser = await prisma.user.findUnique({
       where: { id },
@@ -48,7 +48,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -56,7 +56,7 @@ export async function PUT(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Users can only update their own profile
     if (user.userId !== id) {

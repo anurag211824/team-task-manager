@@ -16,7 +16,7 @@ import { AddProjectMemberRequest } from "@/types";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -24,7 +24,7 @@ export async function GET(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check access
     const hasAccess = await checkProjectAccess(user.userId, id);
@@ -49,7 +49,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -57,7 +57,7 @@ export async function POST(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check if user can manage members
     const canManage = await canManageMembers(user.userId, id);
@@ -68,12 +68,17 @@ export async function POST(
     const body = (await request.json()) as AddProjectMemberRequest;
 
     if (!body.userId) {
-      return badRequest("User ID is required");
+      return badRequest("User ID or Email is required");
     }
 
-    // Check if user exists
-    const targetUser = await prisma.user.findUnique({
-      where: { id: body.userId },
+    // Check if user exists (by ID or Email)
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { id: body.userId.match(/^[0-9a-fA-F]{24}$/) ? body.userId : undefined },
+          { email: body.userId },
+        ],
+      },
     });
 
     if (!targetUser) {
@@ -82,7 +87,7 @@ export async function POST(
 
     // Check if already a member
     const existingMember = await prisma.projectMember.findUnique({
-      where: { projectId_userId: { projectId: id, userId: body.userId } },
+      where: { projectId_userId: { projectId: id, userId: targetUser.id } },
     });
 
     if (existingMember) {
@@ -93,7 +98,7 @@ export async function POST(
     const member = await prisma.projectMember.create({
       data: {
         projectId: id,
-        userId: body.userId,
+        userId: targetUser.id,
         role: body.role || ProjectRole.MEMBER,
         canManageTasks: body.canManageTasks ?? true,
         canManageMembers: body.canManageMembers ?? false,
@@ -117,7 +122,7 @@ export async function POST(
 
     // Notify user
     await notifyUser(
-      body.userId,
+      targetUser.id,
       NotificationType.MEMBER_ADDED,
       "Added to Project",
       `You have been added to project as ${body.role || ProjectRole.MEMBER}`,

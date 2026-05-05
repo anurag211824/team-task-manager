@@ -20,20 +20,15 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // If no token and trying to access protected route, redirect to login
+  // If no token and trying to access protected route
   if (!token) {
-    // For root path without token, redirect to login
-    if (pathname === "/") {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Allow access to other public routes (/login, /signup)
+    // Allow access to public routes (/login, /signup, /)
     if (isPublicRoute) {
       return NextResponse.next();
     }
 
-    // Redirect to login for protected routes
-    return NextResponse.redirect(new URL("/login", request.url));
+    // Redirect to root for protected routes
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   // If has token and trying to access auth pages, redirect to dashboard
@@ -46,7 +41,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Allow all other requests
+// Allow all /dashboard routes
+if (token && pathname.startsWith("/dashboard")) {
+  return NextResponse.next();
+}
+  // Allow all other valid requests
   return NextResponse.next();
 }
 

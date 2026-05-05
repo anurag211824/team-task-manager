@@ -6,6 +6,7 @@ import {
   NotificationType,
   ActivityAction,
   ActivityEntityType,
+  Task,
 } from "@prisma/client";
 
 // ============= AUTH TYPES =============
@@ -77,10 +78,15 @@ export interface ProjectResponse {
   color: string;
   icon?: string;
   ownerId: string;
-  tasksCount: number;
-  completedCount: number;
+  tasksCount?: number;
+  completedCount?: number;
   createdAt: string;
   updatedAt: string;
+  _count?: {
+    members: number;
+    tasks: number;
+  };
+  tasks?: Task[];
 }
 
 export interface ProjectDetailResponse extends ProjectResponse {
@@ -164,6 +170,7 @@ export interface UpdateTaskRequest {
   priority?: TaskPriority;
   status?: TaskStatus;
   dueDate?: string;
+  startDate?: string;
   assignedToId?: string;
   tagIds?: string[];
   estimatedHours?: number;
@@ -267,6 +274,7 @@ export interface ActivityResponse {
   taskId?: string;
   createdAt: string;
   user: UserProfile;
+  project?: { name: string };
 }
 
 // ============= NOTIFICATION TYPES =============
@@ -312,7 +320,9 @@ export interface ProjectDashboardStats {
 export interface UserDashboardResponse {
   success: boolean;
   data: {
-    stats: DashboardStats;
+    totalProjects: number;
+    totalAssignedTasks: number;
+    completedTasks: number;
     assignedTasks: TaskResponse[];
     projects: ProjectResponse[];
     overdueTasks: TaskResponse[];
@@ -368,7 +378,7 @@ export interface TaskQueryParams extends QueryParams {
   assignedToId?: string;
 }
 
-export interface ProjectQueryParams extends QueryParams {}
+export type ProjectQueryParams = QueryParams;
 
 export interface MemberQueryParams extends QueryParams {
   projectId: string;

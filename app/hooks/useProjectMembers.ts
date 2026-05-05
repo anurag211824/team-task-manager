@@ -19,7 +19,7 @@ export const useProjectMembers = (projectId: string) =>
         await apiClient.get<ProjectMembersListResponse>(
           `/projects/${projectId}/members`
         );
-      return res.data.data;
+      return res.data;
     },
     enabled: !!projectId,
   });

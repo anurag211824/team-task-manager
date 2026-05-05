@@ -30,6 +30,10 @@ export async function GET(request: NextRequest) {
         include: {
           owner: { select: { id: true, name: true, email: true } },
           _count: { select: { members: true, tasks: true } },
+          tasks: {
+            where: { status: "DONE" },
+            select: { id: true }
+          }
         },
         skip,
         take: limit,
@@ -68,9 +72,21 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as CreateProjectRequest;
 
     // Validation
+    if (!body.name || body.name.trim().length < 2) {
+      return badRequest("Project name must be at least 2 characters long");
+    }
+    
     const validation = validateProjectRequest(body);
     if (!validation.valid) {
       return badRequest(validation.errors.join(", "));
+    }
+
+    // Verify user exists
+    const userExists = await prisma.user.findUnique({
+      where: { id: user.userId },
+    });
+    if (!userExists) {
+      return unauthorized();
     }
 
     // Create project
@@ -79,7 +95,6 @@ export async function POST(request: NextRequest) {
         name: body.name,
         description: body.description,
         color: body.color || "#3b82f6",
-        isPublic: body.isPublic || false,
         ownerId: user.userId,
       },
       include: {

@@ -126,12 +126,12 @@ export async function POST(request: NextRequest) {
     });
 
     // Connect tags if provided
-    if (taskData.tags && taskData.tags.length > 0) {
+    if (taskData.tagIds && taskData.tagIds.length > 0) {
       await prisma.task.update({
         where: { id: task.id },
         data: {
           tags: {
-            connect: taskData.tags.map((tagId) => ({ id: tagId })),
+            connect: taskData.tagIds.map((tagId) => ({ id: tagId })),
           },
         },
       });

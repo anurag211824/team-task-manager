@@ -21,6 +21,7 @@ export const useAuth = () => {
       // Store token in both localStorage (client-side access) and cookie (middleware access)
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.user.id);
+      localStorage.setItem("userName", data.user.name);
       
       // Set cookies for middleware access (7 day expiry)
       setCookie("token", data.token, 7);
@@ -40,6 +41,7 @@ export const useAuth = () => {
       // Store token in both localStorage (client-side access) and cookie (middleware access)
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId", data.user.id);
+      localStorage.setItem("userName", data.user.name);
       
       // Set cookies for middleware access (7 day expiry)
       setCookie("token", data.token, 7);
@@ -51,6 +53,7 @@ export const useAuth = () => {
     // Clear from both localStorage and cookies
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
+    localStorage.removeItem("userName");
     clearAuthCookies();
   };
 

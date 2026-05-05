@@ -16,7 +16,7 @@ import { CreateCommentRequest } from "@/types";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -24,7 +24,7 @@ export async function POST(
       return unauthorized();
     }
 
-    const { id: taskId } = params;
+    const { id: taskId } = await params;
 
     // Check task access
     const hasAccess = await checkTaskAccess(user.userId, taskId);

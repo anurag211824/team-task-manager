@@ -55,11 +55,11 @@ export function validateSignupRequest(
 }
 
 export function validateProjectRequest(
-  req: CreateProjectRequest
+  req: Partial<CreateProjectRequest>
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!req.name || req.name.trim().length < 2) {
+  if (req.name !== undefined && req.name.trim().length < 2) {
     errors.push("Project name must be at least 2 characters long");
   }
 
@@ -78,7 +78,7 @@ export function validateProjectRequest(
 }
 
 export function validateTaskRequest(
-  req: CreateTaskRequest,
+  req: Omit<CreateTaskRequest, 'projectId'>,
   projectId: string
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];

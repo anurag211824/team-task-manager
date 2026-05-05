@@ -140,11 +140,21 @@ export async function GET(request: NextRequest) {
           },
         }),
         totalAssignedTasks: await prisma.task.count({
-          where: { assignedToId: user.userId },
+          where: {
+            OR: [
+              { assignedToId: user.userId },
+              { creatorId: user.userId },
+              { project: { ownerId: user.userId } }
+            ]
+          },
         }),
         completedTasks: await prisma.task.count({
           where: {
-            assignedToId: user.userId,
+            OR: [
+              { assignedToId: user.userId },
+              { creatorId: user.userId },
+              { project: { ownerId: user.userId } }
+            ],
             status: TaskStatus.DONE,
           },
         }),

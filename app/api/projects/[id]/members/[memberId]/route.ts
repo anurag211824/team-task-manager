@@ -14,7 +14,7 @@ import { ActivityAction, ActivityEntityType } from "@prisma/client";
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -22,7 +22,7 @@ export async function DELETE(
       return unauthorized();
     }
 
-    const { id: projectId, memberId } = params;
+    const { id: projectId, memberId } = await params;
 
     // Check if user can manage members
     const canManage = await canManageMembers(user.userId, projectId);
@@ -63,7 +63,7 @@ export async function DELETE(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; memberId: string } }
+  { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -71,7 +71,7 @@ export async function PUT(
       return unauthorized();
     }
 
-    const { id: projectId, memberId } = params;
+    const { id: projectId, memberId } = await params;
 
     // Check if user can manage members
     const canManage = await canManageMembers(user.userId, projectId);

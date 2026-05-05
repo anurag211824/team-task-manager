@@ -12,11 +12,11 @@ import {
 import { checkTaskAccess, canManageTasks } from "@/lib/permissions";
 import { logActivity, notifyUser } from "@/lib/audit";
 import { ActivityAction, ActivityEntityType, NotificationType } from "@prisma/client";
-import { UpdateTaskRequest, UpdateTaskStatusRequest } from "@/types";
+import { UpdateTaskRequest } from "@/types";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -24,7 +24,7 @@ export async function GET(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check access
     const hasAccess = await checkTaskAccess(user.userId, id);
@@ -61,7 +61,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -69,7 +69,7 @@ export async function PUT(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check access
     const hasAccess = await checkTaskAccess(user.userId, id);
@@ -170,7 +170,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await authenticate(request);
@@ -178,7 +178,7 @@ export async function DELETE(
       return unauthorized();
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Check access
     const hasAccess = await checkTaskAccess(user.userId, id);
